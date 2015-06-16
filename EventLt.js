@@ -230,16 +230,22 @@
 	global.eventLt = eventLt;
 })(this);
 
+// 测试stepSync
 eventLt.stepSync(function(done) {
+	console.log('第一步，传递1a,1b');
 	done("1a", "1b");
 }, function(a, b, done) {
 	setTimeout(function() {
-		done("step1:LeeBox Love Shorly");
+		console.log('第三步，发送step1:Shorly');
+		done("step1:Shorly");
 	}, 1000);
+	console.log('第二步，接收并显示1a,1b');
 	console.log(a + b);
 }, function(c) {
+	console.log('第四步，接收step1:shorly');
 	console.log(c);
 });
+
 
 eventLt.stepSync(function(done) {
 	done("2Lee");
@@ -328,9 +334,11 @@ eventLt.emit("b", '');
 eventLt.emit("a", '');
 eventLt.emit("c", '');
 
-var arr = [];
-console.log(arr.concat(["2", "3"]).concat("4"));
-
+// 顺序执行队列消息
+// 因为是队列消息，有时候第一步已经执行完了下一步还没进入队列
+// 这样对导致之前的done算法失效，done无法传递给下一个方法
+// 所以目前的思路是在开一个done属性保存上一次执行完的返回参数
+// 当执行新方法是检查done是否有参数，有则添加进来
 eventLt.waitQ("t", function(done) {
 	console.log('顺序执行1');
 	done();
@@ -343,7 +351,7 @@ eventLt.waitQ("t", function(done) {
 })
 eventLt.waitQ("t", function(done) {
 	console.log('顺序执行3');
-	done(2);
+	done();
 })
 eventLt.waitQ("t", function() {
 	setTimeout(function() {
