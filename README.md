@@ -62,3 +62,27 @@ eventLt.step(function(done) {
 我在内部实现中把所有参数（既函数）某一事件队列，事件名称使用done+index的方式来定义，这样done1下就有一系列的事件队列，然后依次执行之，方法执行的时候会监听done事件，该方法执行结束触发done事件接着执行下一方法，以此类推。
 
 具体看代码注释，回头我还是画个流程图出来直观点，身边没有草稿纸，都是凭空想象的。
+
+##添加eventLt.waitQ方法 6.16
+```
+eventLt.waitQ("t", function(done) {
+	console.log('顺序执行1');
+	done();
+})
+eventLt.waitQ("t", function(done) {
+	setTimeout(function() {
+		console.log('顺序执行2');
+		done();
+	}, 1000)
+})
+eventLt.waitQ("t", function(done) {
+	console.log('顺序执行3');
+	done();
+})
+eventLt.waitQ("t", function() {
+	setTimeout(function() {
+		console.log('顺序执行4');
+	}, 1000)
+})
+```
+方法会根据前后顺序执行方法，通过done控制流程,理论上还是能通过done传递参数的，以后在弄吧

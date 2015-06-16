@@ -1,7 +1,10 @@
 (function(global) {
 	// 自定义事件
 	var eventLt = function() {
-		var events = {};
+		// var events = Object.create(null);
+		var events = {
+			queue: null
+		};
 		var obj = new Object();
 		// 随机事件名称计数
 		var ramIndex = 0;
@@ -39,15 +42,15 @@
 		};
 		// 只监听单一事件,只认可第一次添加的事件
 		obj.addone = function(eventname, cb) {
-				if (!events.hasOwnProperty(eventname)) {
-					events[eventname] = {
-						name: eventname,
-						listener: cb,
-						listeners: [cb]
-					}
+			if (!events.hasOwnProperty(eventname)) {
+				events[eventname] = {
+					name: eventname,
+					listener: cb,
+					listeners: [cb]
 				}
 			}
-			// 触发事件
+		};
+		// 触发事件
 		obj.emit = function(eventname) {
 			if (events.hasOwnProperty(eventname)) {
 				var listener = events[eventname].listener;
@@ -59,6 +62,21 @@
 					if (events[eventname].once) {
 						delete events[eventname];
 					} else if (events[eventname].listeners.length === 0) {
+						delete events[eventname];
+					}
+					listener.apply(this, args || []);
+				}
+			};
+		};
+		obj.emitQ = function(eventname, first) {
+			if (events.hasOwnProperty(eventname)) {
+				var listener = events[eventname].listener;
+				if (typeof listener == "function") {
+					// 无论如何，触发事件传递的参数最后一个是事件名称
+					var args = Array.prototype.slice.call(arguments, 1);
+					args.push(eventname);
+					// 如果是once或者listeners长度为0，表示该事件已经执行完毕可以删除
+					if (!first && events[eventname].queue.length === 1) {
 						delete events[eventname];
 					}
 					listener.apply(this, args || []);
@@ -173,6 +191,40 @@
 			// 依次取出事件执行
 			next("wait" + ramIndex, done(ramIndex));
 		};
+
+		// 等待队列，参数为监听的事件和回调，接受多个事件压入事件队列
+		// 自动执行顺序执行，没有关系依赖
+		obj.waitQ = function(eventname, cb) {
+			var done = function() {
+				// 检查queue队列是否有值，有则弹出到listener
+				if (events[eventname] && events[eventname].queue.length > 1) {
+					events[eventname].queue.shift();
+					events[eventname].listener = events[eventname].queue[0];
+					obj.emitQ(eventname);
+				} else {
+					delete events[eventname];
+				}
+			};
+			// 包装cb，cb是先进先出队列，所有listener第一个是第一次进入的方法
+			// 执行结束后再弹出头部函数
+			var cbWrap = function(callback) {
+				return function() {
+					var evtname = arguments[arguments.length - 1];
+					var args = [done];
+					callback.apply(this, args);
+				}
+			}
+			if (events.hasOwnProperty(eventname)) {
+				events[eventname].queue.push(cbWrap(cb));
+			} else {
+				events[eventname] = {
+					name: eventname,
+					listener: cbWrap(cb),
+					queue: [cbWrap(cb)]
+				};
+				obj.emitQ(eventname, true);
+			}
+		};
 		return obj;
 	}();
 	global.eventLt = eventLt;
@@ -241,7 +293,9 @@ eventLt.step(function(done) {
 
 eventLt.step(function(done) {
 	console.log('a');
-	done("a", "b");
+	eventLt.once("wait", function() {
+		done("aaaaaaaaaaa", "bbbbbbbbbbb");
+	});
 }).step(function(a, b, done) {
 	console.log(a + b);
 	setTimeout(function() {
@@ -251,14 +305,48 @@ eventLt.step(function(done) {
 	console.log(a);
 }).done();
 
+setTimeout(function() {
+	console.log('测试延时4秒触发流程');
+	eventLt.emit("wait");
+}, 4000);
+
+eventLt.on("a", function() {
+	console.log("触发a事件");
+	console.log(arguments);
+});
 eventLt.series("a", "b", "c", "d", function(a, b, c, d) {
+	console.log('series begin');
 	console.log(a);
 	console.log(b);
 	console.log(c);
 	console.log(d);
+	console.log('series end');
 });
 
-eventLt.emit("d", 'd');
-eventLt.emit("b", 'b');
-eventLt.emit("a", 'a');
-eventLt.emit("c", 'c');
+eventLt.emit("d", '');
+eventLt.emit("b", '');
+eventLt.emit("a", '');
+eventLt.emit("c", '');
+
+var arr = [];
+console.log(arr.concat(["2", "3"]).concat("4"));
+
+eventLt.waitQ("t", function(done) {
+	console.log('顺序执行1');
+	done();
+})
+eventLt.waitQ("t", function(done) {
+	setTimeout(function() {
+		console.log('顺序执行2');
+		done();
+	}, 1000)
+})
+eventLt.waitQ("t", function(done) {
+	console.log('顺序执行3');
+	done(2);
+})
+eventLt.waitQ("t", function() {
+	setTimeout(function() {
+		console.log('顺序执行4');
+	}, 1000)
+})
