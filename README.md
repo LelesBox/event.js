@@ -13,11 +13,11 @@ id表示模块名称，depency表示依赖列表，cb表示该模块的方法
 ```
 这样下来，在执行方法时会一次根据depency来调用方法，看起来就是个树形结构，当然了，这需要事件方法来支撑，结果写着写着，所以今天需要实现一个顺序执行依赖的方法，结构类似于Async，如
 ```
-Async(function(a) {
-
-}, function(b) {
-	
-});
+Async.waterfall([function(callback) {
+    callback("data");
+}, function(b,callback) {
+	callback();
+}]);
 ```
 所以今天的精力就是实现这个功能，之前没有了解过Async的实现原理，所以对这个API的实现只能凭着自己目前的知识，然后我还是想到了事件的方式，对于每一个方法的执行有一个done事件表示完成该方法可以接着执行下一个方法了，下一个方法执行完后调用done表示该方法以完成且done()可以给下一个方法传递参数如done("a");
 最终使用结果如下：
@@ -55,6 +55,21 @@ eventLt.step(function(done) {
 }).done();
 ```
 还是需要done来触发下一个方法，但这个方法有一个特殊的地方就是在调用的尾部需要调.done()方法。
+
+此外，还有一个方法是同时监听多个事件，知道所有事件都触发后才发生回调，且不管事件触发的顺序
+eventLt.series("a", "b", "c", "d", function(a, b, c, d) {
+	console.log('series begin');
+	console.log(a);
+	console.log(b);
+	console.log(c);
+	console.log(d);
+	console.log('series end');
+});
+
+eventLt.emit("d", '1');
+eventLt.emit("b", '2');
+eventLt.emit("a", '3');
+eventLt.emit("c", '4');
 
 
 ##基本原理
