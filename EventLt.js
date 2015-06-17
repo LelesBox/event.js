@@ -327,6 +327,7 @@ eventLt.series("a", "b", "c", "d", function(a, b, c, d) {
 	console.log(c);
 	console.log(d);
 	console.log('series end');
+	console.log(arguments);
 });
 
 eventLt.emit("d", '');

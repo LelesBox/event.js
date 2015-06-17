@@ -71,6 +71,8 @@ eventLt.emit("d", '1');
 eventLt.emit("b", '2');
 eventLt.emit("a", '3');
 eventLt.emit("c", '4');
+
+其中回调函数的返回值既series的回调函数的参数的结构为事件参数返回的数组`而且最好一个参数是相应的事件名`
 ```
 
 ##基本原理
