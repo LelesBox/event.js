@@ -56,7 +56,8 @@ eventLt.step(function(done) {
 ```
 还是需要done来触发下一个方法，但这个方法有一个特殊的地方就是在调用的尾部需要调.done()方法。
 
-此外，还有一个方法是同时监听多个事件，知道所有事件都触发后才发生回调，且不管事件触发的顺序
+此外，还有一个方法是同时监听多个事件，直到所有事件都触发后才发生回调，且不管事件触发的顺序
+```
 eventLt.series("a", "b", "c", "d", function(a, b, c, d) {
 	console.log('series begin');
 	console.log(a);
@@ -70,7 +71,7 @@ eventLt.emit("d", '1');
 eventLt.emit("b", '2');
 eventLt.emit("a", '3');
 eventLt.emit("c", '4');
-
+```
 
 ##基本原理
 要讲的是链式调用方法是基于第一个方法实现的，内部会调用第一个方法，第一个方法中是把所有函数当做参数传入。
