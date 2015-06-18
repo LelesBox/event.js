@@ -1,4 +1,4 @@
-#基于事件的同步方法，实现Async的一个功能
+#基于封装事件来控制异步流程
 
 前几天在《JavaScript高级程序设计》里学到了自定义事件方法，觉得很多复杂的逻辑都可以根据事件模型来解耦，通过事件监听机制来很直观的画出各个功能间的依赖关系。 
 
@@ -34,6 +34,7 @@ eventLt.stepSync(function(done) {
 }).fail(function(err){
 	console.log(err);
 });
+其中后面的fail方法是必须的
 ```
 其中`done`是执行下一个方法的回调且可以传递参数如上，当一个方法没有done时永远不会执行到下一个方法，当然我想不会有这种需求吧，最好方法理所当然不用done，但是前面的方法还是需要用done来完成功能。
 当然，我还顺便实现了类似链式调用的API，如下：
@@ -60,7 +61,7 @@ eventLt.step(function(done) {
 
 当done传递 eventLt.error函数时会调用fail方法；
 如 done(eventLt.error("PAGE NOT FOUND"));
-无论有没有报错 fail函数都是必须的
+其中后面的fail方法是必须的，无论有没有抛错
 ```
 还是需要done来触发下一个方法，但这个方法有一个特殊的地方就是在调用的尾部需要调.done()方法。
 
