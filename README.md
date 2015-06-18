@@ -19,7 +19,7 @@ Async.waterfall([function(callback) {
 	callback();
 }]);
 ```
-所以今天的精力就是实现这个功能，之前没有了解过Async的实现原理，所以对这个API的实现只能凭着自己目前的知识，然后我还是想到了事件的方式，对于每一个方法的执行有一个done事件表示完成该方法可以接着执行下一个方法了，下一个方法执行完后调用done表示该方法以完成且done()可以给下一个方法传递参数如done("a");
+所以今天的精力就是实现这个功能，之前没有了解过Async的实现原理，所以对这个API的实现只能凭着自己目前的知识，然后我还是想到了事件的方式，对于每一个方法的执行有一个done事件表示完成该方法可以接着执行下一个方法了，下一个方法执行完后调用done表示该方法以完成且done()可以给下一个方法传递参数如done("a"),函数最后要调用fail对错误事件做处理;
 最终使用结果如下：
 ```
 eventLt.stepSync(function(done) {
@@ -31,6 +31,8 @@ eventLt.stepSync(function(done) {
 	console.log(a + b);
 }, function(c) {
 	console.log(c);
+}).fail(function(err){
+	console.log(err);
 });
 ```
 其中`done`是执行下一个方法的回调且可以传递参数如上，当一个方法没有done时永远不会执行到下一个方法，当然我想不会有这种需求吧，最好方法理所当然不用done，但是前面的方法还是需要用done来完成功能。
@@ -52,7 +54,13 @@ eventLt.step(function(done) {
 }).step(function(s) {
 	console.log(s);
 	console.log(eventLt._getevents());
-}).done();
+}).fail(function(err){
+	console.log(err)
+});
+
+当done传递 eventLt.error函数时会调用fail方法；
+如 done(eventLt.error("PAGE NOT FOUND"));
+无论有没有报错 fail函数都是必须的
 ```
 还是需要done来触发下一个方法，但这个方法有一个特殊的地方就是在调用的尾部需要调.done()方法。
 
@@ -72,7 +80,7 @@ eventLt.emit("b", '2');
 eventLt.emit("a", '3');
 eventLt.emit("c", '4');
 
-其中回调函数的返回值既series的回调函数的参数的结构为事件参数返回的数组`而且最好一个参数是相应的事件名`
+其中回调函数的返回值既series的回调函数的参数的结构为事件参数返回的数组,而且最后一个参数是相应的事件名
 ```
 
 ##基本原理
@@ -103,4 +111,8 @@ eventLt.waitQ("t", function() {
 	}, 1000)
 })
 ```
-方法会根据前后顺序执行方法，通过done控制流程,理论上还是能通过done传递参数的，以后在弄吧
+方法会根据前后顺序执行方法，通过done控制流程.
+<del>理论上还是能通过done传递参数的，以后在弄吧</del>
+
+更新后 支持done传递参数了，用法和上面的类似，还添加了fail处理，前提是需要在waitQ的前面调用eventLt.failQ方法，如 eventLt.failQ("t",function(err){});
+当然这不是必须的。
